@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>BMW GIIAS 2025 — Sales Attendance</title>
+<style>
+/* ── Reset ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --black:    #1a1a1a;
+  --white:    #ffffff;
+  --bg:       #f5f4f0;
+  --surface:  #ffffff;
+  --border:   #e5e3dc;
+  --text:     #1a1a1a;
+  --muted:    #888780;
+  --radius:   10px;
+  --radius-sm:6px;
+
+  --green-bg: #EAF3DE; --green-tx: #27500A; --green-bd: #C0DD97;
+  --amber-bg: #FAEEDA; --amber-tx: #633806; --amber-bd: #FAC775;
+  --red-bg:   #FCEBEB; --red-tx:   #791F1F; --red-bd:   #F7C1C1;
+  --blue-bg:  #E6F1FB; --blue-tx:  #0C447C; --blue-bd:  #B5D4F4;
+  --gray-bg:  #F1EFE8; --gray-tx:  #444441; --gray-bd:  #D3D1C7;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: var(--bg); color: var(--text); min-height: 100vh;
+}
+
+/* ── Topnav ── */
+.topnav {
+  background: var(--black); color: var(--white);
+  height: 52px; padding: 0 20px;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 200;
+}
+.topnav-brand { font-size: 14px; font-weight: 600; letter-spacing: 0.06em; }
+.topnav-brand span { opacity: .45; margin: 0 8px; font-weight: 300; }
+.nav-tabs { display: flex; gap: 2px; }
+.nav-tab {
+  padding: 6px 13px; font-size: 13px; border-radius: 6px; cursor: pointer;
+  color: rgba(255,255,255,.5); background: transparent; border: none; transition: all .15s;
+}
+.nav-tab:hover  { color: rgba(255,255,255,.85); background: rgba(255,255,255,.08); }
+.nav-tab.active { color: var(--white); background: rgba(255,255,255,.15); }
+.nav-tab.locked { cursor: default; }
+.nav-tab.locked::after { content: " 🔒"; font-size: 10px; opacity: .6; }
+.live-pill {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; color: rgba(255,255,255,.55);
+}
+.live-dot {
+  width: 6px; height: 6px; border-radius: 50%; background: #4ade80;
+  animation: pulse 1.8s infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.25} }
+
+/* ── Pages ── */
+.page { display: none; }
+.page.active { display: block; }
+
+/* ────────────────────────────────────
+   PIN MODAL
+──────────────────────────────────── */
+.modal-overlay {
+  display: none; position: fixed; inset: 0; z-index: 300;
+  background: rgba(0,0,0,.45); backdrop-filter: blur(4px);
+  align-items: center; justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 16px; padding: 32px 28px; width: 340px; max-width: 90vw;
+  text-align: center;
+}
+.modal-title { font-size: 17px; font-weight: 600; margin-bottom: 6px; }
+.modal-sub   { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
+.pin-dots    { display: flex; gap: 10px; justify-content: center; margin-bottom: 20px; }
+.pin-dot {
+  width: 14px; height: 14px; border-radius: 50%;
+  border: 2px solid var(--border); background: transparent; transition: all .15s;
+}
+.pin-dot.filled { background: var(--black); border-color: var(--black); }
+.pin-dot.error  { background: var(--red-tx); border-color: var(--red-tx); }
+.numpad {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+  margin-bottom: 14px;
+}
+.numkey {
+  padding: 16px; font-size: 18px; font-weight: 500; border-radius: var(--radius);
+  border: 1px solid var(--border); background: var(--bg); cursor: pointer;
+  color: var(--text); transition: all .12s; user-select: none;
+}
+.numkey:hover  { background: var(--border); }
+.numkey:active { transform: scale(.95); }
+.numkey.del    { font-size: 14px; color: var(--muted); }
+.pin-error-msg {
+  font-size: 13px; color: var(--red-tx); min-height: 20px; margin-bottom: 10px;
+}
+.btn-cancel {
+  font-size: 13px; padding: 8px 20px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border); background: transparent; cursor: pointer; color: var(--muted);
+}
+
+/* ────────────────────────────────────
+   PAGE: CHECK-IN
+──────────────────────────────────── */
+.checkin-wrap {
+  min-height: calc(100vh - 52px);
+  display: flex; align-items: center; justify-content: center; padding: 24px;
+}
+.checkin-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 16px; padding: 36px 32px; width: 100%; max-width: 400px;
+}
+.ci-logo { text-align: center; margin-bottom: 28px; }
+.ci-logo .ev-tag {
+  font-size: 11px; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 8px;
+}
+.ci-logo .ev-name { font-size: 20px; font-weight: 700; }
+.field-label {
+  font-size: 11px; font-weight: 500; text-transform: uppercase;
+  letter-spacing: .06em; color: var(--muted); margin-bottom: 8px;
+}
+.emp-input {
+  width: 100%; padding: 14px 16px;
+  font-size: 22px; font-weight: 700; text-align: center;
+  letter-spacing: .2em; text-transform: uppercase;
+  border: 1.5px solid var(--border); border-radius: var(--radius);
+  background: var(--bg); color: var(--black);
+  outline: none; transition: border-color .15s;
+}
+.emp-input:focus   { border-color: var(--black); background: var(--white); }
+.emp-input::placeholder { font-weight: 400; letter-spacing: .05em; color: #bbb; font-size: 16px; }
+.hint-text { font-size: 12px; color: var(--muted); text-align: center; margin-top: 8px; }
+.btn-checkin {
+  width: 100%; padding: 16px; font-size: 15px; font-weight: 700; letter-spacing: .04em;
+  background: var(--black); color: var(--white);
+  border: none; border-radius: var(--radius); cursor: pointer; margin-top: 16px;
+  transition: opacity .15s;
+}
+.btn-checkin:hover:not(:disabled) { opacity: .85; }
+.btn-checkin:disabled { opacity: .35; cursor: not-allowed; }
+.alert-box {
+  display: none; border-radius: var(--radius-sm);
+  padding: 12px 14px; font-size: 13px; margin-top: 14px; line-height: 1.5;
+}
+.alert-error { background: var(--red-bg); border: 1px solid var(--red-bd); color: var(--red-tx); }
+.alert-warn  { background: var(--amber-bg); border: 1px solid var(--amber-bd); color: var(--amber-tx); }
+
+/* Success state */
+.success-screen {
+  display: none; flex-direction: column;
+  align-items: center; text-align: center; padding: 8px 0;
+}
+.suc-icon {
+  width: 68px; height: 68px; border-radius: 50%;
+  background: var(--green-bg); border: 1.5px solid var(--green-bd);
+  display: flex; align-items: center; justify-content: center; margin: 0 auto 18px;
+}
+.suc-icon svg { width: 32px; height: 32px; color: var(--green-tx); }
+.suc-name  { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+.suc-sub   { font-size: 13px; color: var(--muted); line-height: 1.7; margin-bottom: 14px; white-space: pre-line; }
+.status-pill {
+  display: inline-block; padding: 6px 18px; border-radius: 999px;
+  font-size: 13px; font-weight: 700; margin-bottom: 20px;
+}
+.pill-tepat { background: var(--green-bg); color: var(--green-tx); border: 1px solid var(--green-bd); }
+.pill-late  { background: var(--amber-bg); color: var(--amber-tx); border: 1px solid var(--amber-bd); }
+.btn-next {
+  font-size: 13px; padding: 9px 20px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border); background: var(--white); cursor: pointer; color: var(--muted);
+  transition: all .15s;
+}
+.btn-next:hover { border-color: var(--black); color: var(--black); }
+
+/* ────────────────────────────────────
+   SUPERVISOR PAGES (shared layout)
+──────────────────────────────────── */
+.sup-wrap { padding: 24px; max-width: 980px; margin: 0 auto; }
+.page-header {
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;
+}
+.page-title { font-size: 18px; font-weight: 700; }
+.page-sub   { font-size: 13px; color: var(--muted); margin-top: 2px; }
+.btn-refresh {
+  display: flex; align-items: center; gap: 6px; font-size: 13px;
+  padding: 8px 16px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border); background: var(--surface); cursor: pointer; color: var(--text);
+  transition: all .15s;
+}
+.btn-refresh:hover { border-color: var(--black); }
+.btn-refresh svg { width: 15px; height: 15px; transition: transform .0s; }
+.btn-refresh.spinning svg { animation: spin .7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Metric grid */
+.metric-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 20px; }
+@media(max-width:680px){ .metric-grid { grid-template-columns: repeat(2,1fr); } }
+.m-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+.m-label { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-bottom: 8px; }
+.m-value { font-size: 32px; font-weight: 800; line-height: 1; }
+.m-sub   { font-size: 12px; color: var(--muted); margin-top: 4px; }
+.mv-green { color: #27500A; } .mv-amber { color: #633806; } .mv-red { color: #791F1F; }
+
+/* Cards */
+.card-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+@media(max-width:680px){ .card-row { grid-template-columns: 1fr; } }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; }
+.card-title { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-bottom: 14px; }
+
+/* Progress */
+.prog-item { margin-bottom: 14px; }
+.prog-item:last-child { margin-bottom: 0; }
+.prog-label { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; }
+.prog-label .cnt { color: var(--muted); }
+.prog-track { height: 7px; background: var(--bg); border-radius: 999px; overflow: hidden; }
+.prog-fill  { height: 100%; border-radius: 999px; transition: width .7s ease; }
+.pf-morning { background: var(--black); } .pf-afternoon { background: #888; }
+
+/* Donut */
+.donut-wrap { display: flex; align-items: center; gap: 20px; }
+.legend-row { display: flex; align-items: center; gap: 8px; font-size: 13px; margin-bottom: 8px; }
+.legend-row:last-child { margin-bottom: 0; }
+.ldot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+/* Tab filter */
+.tab-filter { display: flex; gap: 4px; margin-bottom: 14px; }
+.tab-btn {
+  padding: 5px 14px; font-size: 12px; border-radius: 999px;
+  border: 1px solid var(--border); background: var(--surface); cursor: pointer;
+  color: var(--muted); transition: all .12s;
+}
+.tab-btn:hover { border-color: var(--black); color: var(--black); }
+.tab-btn.active { background: var(--black); border-color: var(--black); color: var(--white); }
+
+/* Table */
+.data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.data-table th {
+  font-size: 11px; text-transform: uppercase; letter-spacing: .04em;
+  color: var(--muted); text-align: left; padding: 0 0 8px;
+  border-bottom: 1px solid var(--border); font-weight: 500;
+}
+.data-table td { padding: 10px 0; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.data-table tr:last-child td { border-bottom: none; }
+.name-cell { font-weight: 600; } .id-cell { color: var(--muted); font-family: monospace; font-size: 12px; }
+.tbl-scroll { overflow-x: auto; }
+
+/* Badges */
+.badge {
+  display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 600;
+}
+.bg-green { background: var(--green-bg); color: var(--green-tx); }
+.bg-amber { background: var(--amber-bg); color: var(--amber-tx); }
+.bg-red   { background: var(--red-bg);   color: var(--red-tx);   }
+.bg-blue  { background: var(--blue-bg);  color: var(--blue-tx);  }
+.bg-gray  { background: var(--gray-bg);  color: var(--gray-tx);  }
+
+/* Avatar */
+.avatar {
+  width: 34px; height: 34px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; flex-shrink: 0;
+}
+.av-blue { background: var(--blue-bg); color: var(--blue-tx); }
+.av-red  { background: var(--red-bg);  color: var(--red-tx);  }
+.absent-row { display: flex; align-items: center; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--border); }
+.absent-row:last-child { border-bottom: none; }
+.ab-info { flex: 1; min-width: 0; }
+.ab-name { font-weight: 600; font-size: 13px; }
+.ab-sub  { font-size: 11px; color: var(--muted); margin-top: 1px; }
+
+/* Empty / spinner */
+.empty-state { text-align: center; padding: 32px; color: var(--muted); font-size: 13px; }
+.spinner-wrap { text-align: center; padding: 40px; }
+.spinner {
+  width: 26px; height: 26px; border: 2px solid var(--border);
+  border-top-color: var(--black); border-radius: 50%;
+  animation: spin .7s linear infinite; margin: 0 auto 10px;
+}
+
+/* ── Supervisor lock screen ── */
+.lock-screen {
+  min-height: calc(100vh - 52px);
+  display: flex; align-items: center; justify-content: center; padding: 24px;
+}
+.lock-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 16px; padding: 36px 28px; width: 320px; max-width: 90vw; text-align: center;
+}
+.lock-icon {
+  font-size: 36px; margin-bottom: 14px;
+}
+.lock-title { font-size: 17px; font-weight: 700; margin-bottom: 6px; }
+.lock-sub   { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
+.lock-pin-dots { display: flex; gap: 10px; justify-content: center; margin-bottom: 20px; }
+.lock-numpad {
+  display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 14px;
+}
+</style>
+</head>
+<body>
+
+<!-- ════════ PIN MODAL (untuk masuk halaman supervisor via tab) ════════ -->
+<div class="modal-overlay" id="pin-modal">
+  <div class="modal">
+    <div class="modal-title">Akses Supervisor</div>
+    <div class="modal-sub">Masukkan PIN 4 digit</div>
+    <div class="pin-dots" id="modal-dots">
+      <div class="pin-dot" id="md0"></div>
+      <div class="pin-dot" id="md1"></div>
+      <div class="pin-dot" id="md2"></div>
+      <div class="pin-dot" id="md3"></div>
+    </div>
+    <div class="numpad">
+      <button class="numkey" onclick="pinKey('1')">1</button>
+      <button class="numkey" onclick="pinKey('2')">2</button>
+      <button class="numkey" onclick="pinKey('3')">3</button>
+      <button class="numkey" onclick="pinKey('4')">4</button>
+      <button class="numkey" onclick="pinKey('5')">5</button>
+      <button class="numkey" onclick="pinKey('6')">6</button>
+      <button class="numkey" onclick="pinKey('7')">7</button>
+      <button class="numkey" onclick="pinKey('8')">8</button>
+      <button class="numkey" onclick="pinKey('9')">9</button>
+      <button class="numkey del" onclick="pinKey('del')">⌫</button>
+      <button class="numkey" onclick="pinKey('0')">0</button>
+      <button class="numkey del" onclick="pinKey('clr')">C</button>
+    </div>
+    <div class="pin-error-msg" id="modal-pin-err"></div>
+    <button class="btn-cancel" onclick="closePin()">Batal</button>
+  </div>
+</div>
+
+<!-- ════════ TOP NAV ════════ -->
+<nav class="topnav">
+  <div class="topnav-brand">BMW<span>|</span>GIIAS 2025</div>
+  <div class="nav-tabs">
+    <button class="nav-tab active"  id="tab-checkin"   onclick="switchPage('checkin',this)">Check-In</button>
+    <button class="nav-tab locked"  id="tab-dashboard" onclick="requestSupervisor('dashboard',this)">Dashboard</button>
+    <button class="nav-tab locked"  id="tab-absent"    onclick="requestSupervisor('absent',this)">Belum Hadir</button>
+    <button class="nav-tab locked"  id="tab-log"       onclick="requestSupervisor('log',this)">Log</button>
+  </div>
+  <div class="live-pill"><div class="live-dot"></div><span id="live-count">0/0 hadir</span></div>
+</nav>
+
+<!-- ════════ PAGE: CHECK-IN ════════ -->
+<div id="page-checkin" class="page active">
+  <div class="checkin-wrap">
+    <div class="checkin-card">
+
+      <div id="ci-form">
+        <div class="ci-logo">
+          <div class="ev-tag">BMW Group Indonesia · GIIAS 2025</div>
+          <div class="ev-name">Sales Check-In</div>
+        </div>
+        <div class="field-label">Employee ID</div>
+        <input id="emp-input" class="emp-input" type="text" placeholder="BMW001" maxlength="6"
+          oninput="this.value=this.value.toUpperCase();clearCiError()"
+          onkeydown="if(event.key==='Enter')submitCheckin()" />
+        <div class="hint-text">Ketik Employee ID lalu tekan tombol di bawah</div>
+        <div id="ci-err"  class="alert-box alert-error"></div>
+        <div id="ci-warn" class="alert-box alert-warn"></div>
+        <button id="btn-ci" class="btn-checkin" onclick="submitCheckin()">CHECK-IN</button>
+      </div>
+
+      <div id="ci-success" class="success-screen">
+        <div class="suc-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+               stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+        </div>
+        <div class="suc-name" id="suc-name">—</div>
+        <div class="suc-sub"  id="suc-sub">—</div>
+        <div class="status-pill" id="suc-status">Tepat Waktu</div>
+        <button class="btn-next" onclick="resetCheckin()">Check-in berikutnya →</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ════════ PAGE: DASHBOARD ════════ -->
+<div id="page-dashboard" class="page">
+  <div class="sup-wrap">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Supervisor Dashboard</div>
+        <div class="page-sub" id="dash-updated">—</div>
+      </div>
+      <button class="btn-refresh" id="btn-refresh-dash" onclick="loadDashboard()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="23 4 23 10 17 10"></polyline>
+          <polyline points="1 20 1 14 7 14"></polyline>
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+        </svg>
+        Refresh
+      </button>
+    </div>
+
+    <div class="metric-grid">
+      <div class="m-card"><div class="m-label">Total Sales</div><div class="m-value" id="m-total">—</div><div class="m-sub">terdaftar</div></div>
+      <div class="m-card"><div class="m-label">Hadir</div><div class="m-value mv-green" id="m-hadir">—</div><div class="m-sub" id="m-pct">—</div></div>
+      <div class="m-card"><div class="m-label">Terlambat</div><div class="m-value mv-amber" id="m-late">—</div><div class="m-sub">melewati batas shift</div></div>
+      <div class="m-card"><div class="m-label">Belum Hadir</div><div class="m-value mv-red" id="m-absent">—</div><div class="m-sub">perlu dicari</div></div>
+    </div>
+
+    <div class="card-row">
+      <div class="card">
+        <div class="card-title">Kehadiran per shift</div>
+        <div class="prog-item">
+          <div class="prog-label">
+            <span>Morning <small style="color:var(--muted)">(batas 07:45)</small></span>
+            <span class="cnt" id="sm-cnt">0 / 0</span>
+          </div>
+          <div class="prog-track"><div class="prog-fill pf-morning" id="sm-bar" style="width:0%"></div></div>
+        </div>
+        <div class="prog-item">
+          <div class="prog-label">
+            <span>Afternoon <small style="color:var(--muted)">(batas 13:00)</small></span>
+            <span class="cnt" id="sa-cnt">0 / 0</span>
+          </div>
+          <div class="prog-track"><div class="prog-fill pf-afternoon" id="sa-bar" style="width:0%"></div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Status kehadiran</div>
+        <div class="donut-wrap">
+          <svg width="90" height="90" viewBox="0 0 90 90" style="flex-shrink:0">
+            <circle cx="45" cy="45" r="34" fill="none" stroke="#F1EFE8" stroke-width="14"/>
+            <circle id="donut-late" cx="45" cy="45" r="34" fill="none" stroke="#EF9F27"
+              stroke-width="14" stroke-dasharray="0 213.6" stroke-linecap="butt"
+              transform="rotate(-90 45 45)" style="transition:stroke-dasharray .7s"/>
+            <circle id="donut-hadir" cx="45" cy="45" r="34" fill="none" stroke="#1a1a1a"
+              stroke-width="14" stroke-dasharray="0 213.6" stroke-linecap="butt"
+              transform="rotate(-90 45 45)" style="transition:stroke-dasharray .7s"/>
+            <text x="45" y="42" text-anchor="middle" font-size="16" font-weight="800"
+                  fill="#1a1a1a" id="donut-pct">0%</text>
+            <text x="45" y="56" text-anchor="middle" font-size="9" fill="#888">hadir</text>
+          </svg>
+          <div>
+            <div class="legend-row"><div class="ldot" style="background:#1a1a1a"></div>Tepat Waktu&nbsp;<strong id="leg-ok">0</strong></div>
+            <div class="legend-row"><div class="ldot" style="background:#EF9F27"></div>Terlambat&nbsp;<strong id="leg-late">0</strong></div>
+            <div class="legend-row"><div class="ldot" style="background:#F1EFE8;border:1px solid #ccc"></div>Belum Hadir&nbsp;<strong id="leg-absent">0</strong></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ PAGE: BELUM HADIR ════════ -->
+<div id="page-absent" class="page">
+  <div class="sup-wrap">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Belum Check-In</div>
+        <div class="page-sub" id="absent-sub">—</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <div class="tab-filter" id="absent-tabs">
+          <button class="tab-btn active" onclick="setAbsentFilter('all',this)">Semua</button>
+          <button class="tab-btn" onclick="setAbsentFilter('Morning',this)">Morning</button>
+          <button class="tab-btn" onclick="setAbsentFilter('Afternoon',this)">Afternoon</button>
+        </div>
+        <button class="btn-refresh" onclick="loadAbsent()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="23 4 23 10 17 10"></polyline>
+            <polyline points="1 20 1 14 7 14"></polyline>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+          </svg>
+          Refresh
+        </button>
+      </div>
+    </div>
+    <div class="card">
+      <div id="absent-list"><div class="spinner-wrap"><div class="spinner"></div><p>Memuat data…</p></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ PAGE: LOG ════════ -->
+<div id="page-log" class="page">
+  <div class="sup-wrap">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Log Absensi</div>
+        <div class="page-sub" id="log-sub">—</div>
+      </div>
+      <button class="btn-refresh" onclick="loadLog()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="23 4 23 10 17 10"></polyline>
+          <polyline points="1 20 1 14 7 14"></polyline>
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+        </svg>
+        Refresh
+      </button>
+    </div>
+    <div class="card tbl-scroll">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Waktu</th><th>Nama</th><th>ID</th>
+            <th>Shift</th><th>Dealer</th><th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="log-tbody">
+          <tr><td colspan="6"><div class="spinner-wrap"><div class="spinner"></div><p>Memuat data…</p></div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     JAVASCRIPT
+════════════════════════════════════════════ -->
+<script>
+// ── CONFIG ──────────────────────────────────
+const GAS_URL = "https://script.google.com/macros/s/AKfycbwT45EpPekyKEfe314z_nfVGTXPRoEnVtHejPdVVDiEo25Z4q0QGFDfUDpRnPiYWDM/exec";
+
+// ── STATE ───────────────────────────────────
+let supervisorUnlocked = false;
+let pendingPage        = null;
+let pendingTab         = null;
+let pinBuffer          = "";
+let absentData         = [];
+let absentFilter       = "all";
+
+// ═══════════════════════════════════════════
+//  NAVIGATION
+// ═══════════════════════════════════════════
+function switchPage(id, el) {
+  document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+  document.querySelectorAll(".nav-tab").forEach(t => t.classList.remove("active"));
+  document.getElementById("page-" + id).classList.add("active");
+  el.classList.add("active");
+  if (id === "dashboard") loadDashboard();
+  if (id === "absent")    loadAbsent();
+  if (id === "log")       loadLog();
+}
+
+function requestSupervisor(page, el) {
+  if (supervisorUnlocked) {
+    switchPage(page, el);
+    return;
+  }
+  pendingPage = page;
+  pendingTab  = el;
+  openPin();
+}
+
+// ═══════════════════════════════════════════
+//  PIN MODAL
+// ═══════════════════════════════════════════
+function openPin() {
+  pinBuffer = "";
+  updateDots();
+  document.getElementById("modal-pin-err").textContent = "";
+  document.getElementById("pin-modal").classList.add("open");
+}
+function closePin() {
+  document.getElementById("pin-modal").classList.remove("open");
+  pinBuffer    = "";
+  pendingPage  = null;
+  pendingTab   = null;
+  updateDots();
+}
+
+function pinKey(k) {
+  const errEl = document.getElementById("modal-pin-err");
+  errEl.textContent = "";
+  // Reset dot colors
+  for (let i = 0; i < 4; i++) document.getElementById("md" + i).classList.remove("error");
+
+  if (k === "del") { pinBuffer = pinBuffer.slice(0, -1); updateDots(); return; }
+  if (k === "clr") { pinBuffer = ""; updateDots(); return; }
+  if (pinBuffer.length >= 4) return;
+  pinBuffer += k;
+  updateDots();
+  if (pinBuffer.length === 4) submitPin();
+}
+
+function updateDots() {
+  for (let i = 0; i < 4; i++) {
+    const d = document.getElementById("md" + i);
+    d.classList.toggle("filled", i < pinBuffer.length);
+  }
+}
+
+async function submitPin() {
+  const errEl = document.getElementById("modal-pin-err");
+  try {
+    const res = await api("verifyPin", { pin: pinBuffer });
+    if (res.success) {
+      supervisorUnlocked = true;
+      document.getElementById("pin-modal").classList.remove("open");
+      // Unlock tab visuals
+      ["tab-dashboard","tab-absent","tab-log"].forEach(id => {
+        document.getElementById(id).classList.remove("locked");
+      });
+      if (pendingPage && pendingTab) switchPage(pendingPage, pendingTab);
+      pendingPage = pendingTab = null;
+    } else {
+      // Wrong PIN — shake dots red
+      for (let i = 0; i < 4; i++) document.getElementById("md" + i).classList.add("error");
+      errEl.textContent = res.message || "PIN salah. Coba lagi.";
+      setTimeout(() => {
+        pinBuffer = "";
+        updateDots();
+        for (let i = 0; i < 4; i++) document.getElementById("md" + i).classList.remove("error");
+        errEl.textContent = "";
+      }, 900);
+    }
+  } catch (e) {
+    errEl.textContent = "Gagal terhubung ke server.";
+    pinBuffer = "";
+    updateDots();
+  }
+}
+
+// ═══════════════════════════════════════════
+//  API HELPER
+// ═══════════════════════════════════════════
+async function api(action, extra = {}) {
+  const res = await fetch(GAS_URL, {
+    method: "POST",
+    body:   JSON.stringify({ action, ...extra })
+  });
+  if (!res.ok) throw new Error("HTTP " + res.status);
+  return res.json();
+}
+
+// ═══════════════════════════════════════════
+//  CHECK-IN
+// ═══════════════════════════════════════════
+function clearCiError() {
+  document.getElementById("ci-err").style.display  = "none";
+  document.getElementById("ci-warn").style.display = "none";
+}
+
+async function submitCheckin() {
+  const input = document.getElementById("emp-input");
+  const empId = input.value.trim().toUpperCase();
+  const btn   = document.getElementById("btn-ci");
+  clearCiError();
+
+  if (!empId) { showCiAlert("err", "Masukkan Employee ID terlebih dahulu."); return; }
+
+  btn.disabled    = true;
+  btn.textContent = "Memproses…";
+
+  try {
+    const res = await api("checkin", { employeeId: empId });
+
+    if (res.success) {
+      const d = res.data;
+      document.getElementById("suc-name").textContent = "Welcome, " + d.nama;
+      document.getElementById("suc-sub").textContent  =
+        "Check-In Successful · " + d.jam + " WIB\n" + d.shift + " Shift · " + d.dealer;
+      const sp = document.getElementById("suc-status");
+      sp.textContent = d.status === "Terlambat" ? "⚠ Terlambat" : "✓ Tepat Waktu";
+      sp.className   = "status-pill " + (d.status === "Terlambat" ? "pill-late" : "pill-tepat");
+      document.getElementById("ci-form").style.display    = "none";
+      document.getElementById("ci-success").style.display = "flex";
+      fetchLiveCount();
+    } else {
+      if ((res.code || "") === "DUPLICATE") showCiAlert("warn", res.message);
+      else                                  showCiAlert("err",  res.message);
+    }
+  } catch (e) {
+    showCiAlert("err", "Gagal terhubung ke server. Periksa koneksi internet.");
+  }
+  btn.disabled    = false;
+  btn.textContent = "CHECK-IN";
+}
+
+function showCiAlert(type, msg) {
+  const el = document.getElementById(type === "err" ? "ci-err" : "ci-warn");
+  el.textContent   = msg;
+  el.style.display = "block";
+}
+
+function resetCheckin() {
+  document.getElementById("emp-input").value              = "";
+  document.getElementById("ci-form").style.display        = "block";
+  document.getElementById("ci-success").style.display     = "none";
+  clearCiError();
+  document.getElementById("emp-input").focus();
+}
+
+// ═══════════════════════════════════════════
+//  DASHBOARD
+// ═══════════════════════════════════════════
+async function loadDashboard() {
+  const btn = document.getElementById("btn-refresh-dash");
+  btn.classList.add("spinning");
+  try {
+    const res = await api("getDashboard");
+    if (!res.success) return;
+    const d = res.data;
+    document.getElementById("m-total").textContent  = d.total;
+    document.getElementById("m-hadir").textContent  = d.hadir;
+    document.getElementById("m-pct").textContent    = d.persentase + "% kehadiran";
+    document.getElementById("m-late").textContent   = d.late;
+    document.getElementById("m-absent").textContent = d.absent;
+
+    const mPct = d.totalMorning   > 0 ? Math.round(d.morning   / d.totalMorning   * 100) : 0;
+    const aPct = d.totalAfternoon > 0 ? Math.round(d.afternoon / d.totalAfternoon * 100) : 0;
+    document.getElementById("sm-cnt").textContent  = d.morning   + " / " + d.totalMorning;
+    document.getElementById("sa-cnt").textContent  = d.afternoon + " / " + d.totalAfternoon;
+    document.getElementById("sm-bar").style.width  = mPct + "%";
+    document.getElementById("sa-bar").style.width  = aPct + "%";
+
+    renderDonut(d);
+
+    const tepat = d.hadir - d.late;
+    document.getElementById("leg-ok").textContent     = tepat < 0 ? 0 : tepat;
+    document.getElementById("leg-late").textContent   = d.late;
+    document.getElementById("leg-absent").textContent = d.absent;
+
+    const now = new Date();
+    document.getElementById("dash-updated").textContent =
+      "Update terakhir: " + pad(now.getHours()) + ":" + pad(now.getMinutes()) + " WIB";
+
+    updateLiveUI(d.hadir, d.total);
+  } catch (e) {
+    document.getElementById("dash-updated").textContent = "Gagal memuat data.";
+  }
+  btn.classList.remove("spinning");
+}
+
+function renderDonut(d) {
+  const circ  = 2 * Math.PI * 34; // ≈ 213.6
+  const total = d.total || 1;
+  const tepat = Math.max(0, d.hadir - d.late);
+
+  const arcTepat = tepat / total * circ;
+  const arcLate  = d.late / total * circ;
+  const degTepat = tepat / total * 360;
+
+  document.getElementById("donut-hadir").setAttribute("stroke-dasharray",
+    arcTepat.toFixed(1) + " " + (circ - arcTepat).toFixed(1));
+
+  const lateEl = document.getElementById("donut-late");
+  lateEl.setAttribute("stroke-dasharray", arcLate.toFixed(1) + " " + (circ - arcLate).toFixed(1));
+  lateEl.setAttribute("transform", "rotate(" + (-90 + degTepat) + " 45 45)");
+
+  document.getElementById("donut-pct").textContent = d.persentase + "%";
+}
+
+// ═══════════════════════════════════════════
+//  BELUM HADIR
+// ═══════════════════════════════════════════
+async function loadAbsent() {
+  document.getElementById("absent-list").innerHTML =
+    '<div class="spinner-wrap"><div class="spinner"></div><p>Memuat data…</p></div>';
+  try {
+    const res = await api("getAbsent");
+    if (!res.success) throw new Error(res.message);
+    absentData = res.data;
+    renderAbsent();
+  } catch (e) {
+    document.getElementById("absent-list").innerHTML =
+      '<div class="empty-state">Gagal memuat data. Coba refresh.</div>';
+  }
+}
+
+function setAbsentFilter(val, el) {
+  absentFilter = val;
+  document.querySelectorAll("#absent-tabs .tab-btn").forEach(t => t.classList.remove("active"));
+  el.classList.add("active");
+  renderAbsent();
+}
+
+function renderAbsent() {
+  const filtered = absentFilter === "all"
+    ? absentData
+    : absentData.filter(r => r.shift === absentFilter);
+
+  document.getElementById("absent-sub").textContent =
+    filtered.length + " sales belum check-in" +
+    (absentFilter !== "all" ? " · " + absentFilter : "");
+
+  if (filtered.length === 0) {
+    document.getElementById("absent-list").innerHTML =
+      '<div class="empty-state">Semua sales sudah check-in! ✓</div>';
+    return;
+  }
+
+  document.getElementById("absent-list").innerHTML = filtered.map(r => {
+    const init   = r.nama.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
+    const avCls  = r.shift === "Morning" ? "av-blue" : "av-red";
+    const shCls  = r.shift === "Morning" ? "bg-blue"  : "bg-amber";
+    return `<div class="absent-row">
+      <div class="avatar ${avCls}">${init}</div>
+      <div class="ab-info">
+        <div class="ab-name">${r.nama}</div>
+        <div class="ab-sub">${r.employeeId} · ${r.dealer}</div>
+      </div>
+      <span class="badge ${shCls}">${r.shift}</span>
+    </div>`;
+  }).join("");
+}
+
+// ═══════════════════════════════════════════
+//  LOG
+// ═══════════════════════════════════════════
+async function loadLog() {
+  document.getElementById("log-tbody").innerHTML =
+    '<tr><td colspan="6"><div class="spinner-wrap"><div class="spinner"></div><p>Memuat data…</p></div></td></tr>';
+  try {
+    const res = await api("getLog");
+    if (!res.success) throw new Error(res.message);
+    const rows = res.data;
+    document.getElementById("log-sub").textContent = rows.length + " entries";
+    if (rows.length === 0) {
+      document.getElementById("log-tbody").innerHTML =
+        '<tr><td colspan="6"><div class="empty-state">Belum ada data check-in.</div></td></tr>';
+      return;
+    }
+    document.getElementById("log-tbody").innerHTML = rows.map(r => {
+      const stCls = r.status === "Terlambat" ? "bg-amber" : "bg-green";
+      const shCls = r.shift  === "Morning"   ? "bg-blue"  : "bg-gray";
+      return `<tr>
+        <td>${r.timestamp}</td>
+        <td class="name-cell">${r.nama}</td>
+        <td class="id-cell">${r.employeeId}</td>
+        <td><span class="badge ${shCls}">${r.shift}</span></td>
+        <td style="color:var(--muted);font-size:12px">${r.dealer}</td>
+        <td><span class="badge ${stCls}">${r.status}</span></td>
+      </tr>`;
+    }).join("");
+  } catch (e) {
+    document.getElementById("log-tbody").innerHTML =
+      '<tr><td colspan="6"><div class="empty-state">Gagal memuat log.</div></td></tr>';
+  }
+}
+
+// ═══════════════════════════════════════════
+//  LIVE COUNT
+// ═══════════════════════════════════════════
+function updateLiveUI(hadir, total) {
+  document.getElementById("live-count").textContent = hadir + "/" + total + " hadir";
+}
+
+async function fetchLiveCount() {
+  try {
+    const res = await api("getDashboard");
+    if (res.success) updateLiveUI(res.data.hadir, res.data.total);
+  } catch (e) {}
+}
+
+// ── Keyboard support for PIN ─────────────
+document.addEventListener("keydown", e => {
+  if (!document.getElementById("pin-modal").classList.contains("open")) return;
+  if (e.key >= "0" && e.key <= "9") pinKey(e.key);
+  if (e.key === "Backspace") pinKey("del");
+  if (e.key === "Escape")    closePin();
+});
+
+// ── Helpers ─────────────────────────────
+function pad(n) { return String(n).padStart(2, "0"); }
+
+// ── Init ─────────────────────────────────
+fetchLiveCount();
+</script>
+</body>
+</html>
